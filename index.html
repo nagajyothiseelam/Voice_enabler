@@ -2,26 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AxisAI Voice Demo</title>
+  <title>AxisAI Multilingual Voice Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: system-ui, sans-serif; background:#f0f7ff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0 }
     #micBtn { width:90px; height:90px; border-radius:50%; border:none; background:#ff6b00; color:#fff; font-size:36px; cursor:pointer; transition:transform .2s }
     #micBtn:active { transform:scale(.9) }
     #bubble { margin-top:25px; padding:12px 20px; max-width:280px; border-radius:18px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); font-size:16px; text-align:center }
-    #lang { margin-top:15px; font-size:14px; color:#666 }
+    #langSel { margin-top:15px }
+    #langSel select { padding:4px 8px; font-size:14px }
   </style>
 </head>
 <body>
   <button id="micBtn" title="Hold & Speak">🎤</button>
-  <div id="bubble">Tap & hold the mic, then say:<br><em>“What’s my balance?”</em></div>
-  <div id="lang">Language: auto-detected</div>
+  <div id="bubble">Choose a language below, then tap & speak!</div>
+
+  <div id="langSel">
+    <select id="langPicker">
+      <option value="en-IN">English</option>
+      <option value="hi-IN">हिंदी</option>
+      <option value="mr-IN">मराठी</option>
+      <option value="te-IN">తెలుగు</option>
+    </select>
+  </div>
 
   <script>
-    const btn = document.getElementById('micBtn');
-    const bubble = document.getElementById('bubble');
-    const langDisp = document.getElementById('lang');
-    const synth = window.speechSynthesis;
+    const btn     = document.getElementById('micBtn');
+    const bubble  = document.getElementById('bubble');
+    const picker  = document.getElementById('langPicker');
+    const synth   = window.speechSynthesis;
 
     if (!('webkitSpeechRecognition' in window)) {
       bubble.textContent = 'Switch to Chrome / Edge for voice demo.';
@@ -31,8 +40,7 @@
       rec.interimResults = false;
 
       btn.onmousedown = () => {
-        rec.lang = navigator.language || 'en-IN';
-        langDisp.textContent = 'Language: ' + rec.lang;
+        rec.lang = picker.value;
         rec.start();
         btn.style.background = '#c00';
         bubble.textContent = 'Listening...';
@@ -42,27 +50,44 @@
 
       rec.onresult = e => {
         const txt = e.results[0][0].transcript.trim();
-        const reply = mockReply(txt);
+        const reply = mockReply(txt, rec.lang);
         bubble.innerHTML = `<strong>You:</strong> ${txt}<br><strong>AxisAI:</strong> ${reply}`;
-        speak(reply);
+        speak(reply, rec.lang);
       };
 
       rec.onend = () => btn.style.background = '#ff6b00';
     }
 
-    function speak(text) {
+    function speak(text, lang) {
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = navigator.language || 'en-IN';
+      u.lang = lang;
       synth.speak(u);
     }
 
-    function mockReply(t) {
+    function mockReply(t, lang) {
       const l = t.toLowerCase();
-      if (l.includes('balance')) return 'Your Axis savings balance is ₹92,450.32.';
-      if (l.includes('transfer') && l.includes('mom')) return 'Transfer ₹5,000 to Mom? Say “confirm” after I stop talking.';
-      if (l.includes('electricity') || l.includes('bill')) return 'Electricity bill ₹1,150 due 21 July. Pay now?';
-      if (l.includes('block') && l.includes('card')) return 'Debit card ending 1234 blocked. Confirmation SMS sent.';
-      return 'Try: balance, transfer, bill, or card commands.';
+      switch (lang) {
+        case 'hi-IN':
+          if (l.includes('बैलेंस') || l.includes('जमा')) return 'आपके खाते में ₹९२,४५०.३२ हैं।';
+          if (l.includes('माँ') && l.includes('पैसे')) return '₹५,००० माँ को भेजें? पुष्टि करें।';
+          return 'कृपया "बैलेंस", "ट्रांसफर" या "बिल" कहें।';
+
+        case 'mr-IN':
+          if (l.includes('बॅलन्स') || l.includes('खाते')) return 'तुमच्या खात्यात ₹९२,४५०.३२ आहेत।';
+          if (l.includes('आई') && l.includes('पैसे')) return '₹५,००० आईला पाठवायचे? कन्फर्म करा।';
+          return 'कृपया "बॅलन्स", "ट्रान्सफर" किंवा "बिल" सांगा.';
+
+        case 'te-IN':
+          if (l.includes('బ్యాలెన్స్') || l.includes('ఖాతా')) return 'మీ ఖాతాలో ₹౯౨,౪౫౦.౩౨ ఉన్నాయి.';
+          if (l.includes('అమ్మ') && l.includes('డబ్బు')) return '₹౫,౦౦౦ అమ్మకు పంపాలి? కన్ఫర్మ్ చేయండి.';
+          return 'దయచేసి "బ్యాలెన్స్", "ట్రాన్స్ఫర్" లేదా "బిల్" చెప్పండి.';
+
+        default: // en-IN
+          if (l.includes('balance')) return 'Your Axis savings balance is ₹92,450.32.';
+          if (l.includes('transfer') && l.includes('mom')) return 'Transfer ₹5,000 to Mom? Say “confirm”.';
+          if (l.includes('electricity') || l.includes('bill')) return 'Electricity bill ₹1,150 due 21 July. Pay now?';
+          return 'Try: balance, transfer, bill or card commands.';
+      }
     }
   </script>
 </body>
