@@ -26,69 +26,94 @@
     </select>
   </div>
 
-  <script>
-    const btn     = document.getElementById('micBtn');
-    const bubble  = document.getElementById('bubble');
-    const picker  = document.getElementById('langPicker');
-    const synth   = window.speechSynthesis;
+ <script>
+  const btn     = document.getElementById('micBtn');
+  const bubble  = document.getElementById('bubble');
+  const picker  = document.getElementById('langPicker');
+  const synth   = window.speechSynthesis;
 
-    if (!('webkitSpeechRecognition' in window)) {
-      bubble.textContent = 'Switch to Chrome / Edge for voice demo.';
-    } else {
-      const rec = new webkitSpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = false;
+  /* ---------- 1. Language map ---------- */
+  const map = {
+    'en-IN': { code: 'en-IN', voice: null, reply: mockReplyEn },
+    'hi-IN': { code: 'hi-IN', voice: null, reply: mockReplyHi },
+    'mr-IN': { code: 'hi-IN', voice: null, reply: mockReplyMr },
+    'te-IN': { code: 'te-IN', voice: null, reply: mockReplyTe }
+  };
 
-      btn.onmousedown = () => {
-        rec.lang = picker.value;
-        rec.start();
-        btn.style.background = '#c00';
-        bubble.textContent = 'Listening...';
-      };
+  /* ---------- 2. Pick the best native voice ---------- */
+  function loadVoices() {
+    const list = synth.getVoices();
+    Object.values(map).forEach(m => {
+      m.voice = list.find(v => v.lang.startsWith(m.code)) || list.find(v => v.default);
+    });
+  }
+  loadVoices();
+  if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
 
-      btn.onmouseup = () => rec.stop();
+  /* ---------- 3. Recognition ---------- */
+  if (!('webkitSpeechRecognition' in window)) {
+    bubble.textContent = 'Switch to Chrome / Edge for voice demo.';
+  } else {
+    const rec = new webkitSpeechRecognition();
+    rec.continuous = false;
+    rec.interimResults = false;
 
-      rec.onresult = e => {
-        const txt = e.results[0][0].transcript.trim();
-        const reply = mockReply(txt, rec.lang);
-        bubble.innerHTML = `<strong>You:</strong> ${txt}<br><strong>AxisAI:</strong> ${reply}`;
-        speak(reply, rec.lang);
-      };
+    btn.onmousedown = () => {
+      rec.lang = picker.value;          // actual recognition language
+      rec.start();
+      btn.style.background = '#c00';
+      bubble.textContent = 'Listening...';
+    };
+    btn.onmouseup = () => rec.stop();
 
-      rec.onend = () => btn.style.background = '#ff6b00';
-    }
+    rec.onresult = e => {
+      const txt = e.results[0][0].transcript.trim();
+      const lang = picker.value;
+      const reply = map[lang].reply(txt);
+      bubble.innerHTML = `<strong>You:</strong> ${txt}<br><strong>AxisAI:</strong> ${reply}`;
+      speak(reply, lang);
+    };
 
-    function speak(text, lang) {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang;
-      synth.speak(u);
-    }
+    rec.onend = () => btn.style.background = '#ff6b00';
+  }
 
-    function mockReply(t, lang) {
-      const l = t.toLowerCase();
-      switch (lang) {
-        case 'hi-IN':
-          if (l.includes('बैलेंस') || l.includes('जमा')) return 'आपके खाते में ₹९२,४५०.३२ हैं।';
-          if (l.includes('माँ') && l.includes('पैसे')) return '₹५,००० माँ को भेजें? पुष्टि करें।';
-          return 'कृपया "बैलेंस", "ट्रांसफर" या "बिल" कहें।';
+  /* ---------- 4. Speak helper ---------- */
+  function speak(text, lang) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = map[lang].code;
+    u.voice = map[lang].voice;
+    synth.speak(u);
+  }
 
-        case 'mr-IN':
-          if (l.includes('बॅलन्स') || l.includes('खाते')) return 'तुमच्या खात्यात ₹९२,४५०.३२ आहेत।';
-          if (l.includes('आई') && l.includes('पैसे')) return '₹५,००० आईला पाठवायचे? कन्फर्म करा।';
-          return 'कृपया "बॅलन्स", "ट्रान्सफर" किंवा "बिल" सांगा.';
+  /* ---------- 5. Mock replies in native scripts ---------- */
+  function mockReplyEn(t) {
+    const l = t.toLowerCase();
+    if (l.includes('balance')) return 'Your Axis savings balance is ₹92,450.32.';
+    if (l.includes('transfer') && l.includes('mom')) return 'Transfer ₹5,000 to Mom? Say “confirm”.';
+    if (l.includes('electricity') || l.includes('bill')) return 'Electricity bill ₹1,150 due 21 July. Pay now?';
+    return 'Try: balance, transfer, bill or card commands.';
+  }
 
-        case 'te-IN':
-          if (l.includes('బ్యాలెన్స్') || l.includes('ఖాతా')) return 'మీ ఖాతాలో ₹౯౨,౪౫౦.౩౨ ఉన్నాయి.';
-          if (l.includes('అమ్మ') && l.includes('డబ్బు')) return '₹౫,౦౦౦ అమ్మకు పంపాలి? కన్ఫర్మ్ చేయండి.';
-          return 'దయచేసి "బ్యాలెన్స్", "ట్రాన్స్ఫర్" లేదా "బిల్" చెప్పండి.';
+  function mockReplyHi(t) {
+    const l = t.toLowerCase();
+    if (l.includes('बैलेंस') || l.includes('जमा')) return 'आपके खाते में ₹९२,४५०.३२ हैं।';
+    if (l.includes('माँ') && l.includes('पैसे')) return '₹५,००० माँ को भेजें? पुष्टि करें।';
+    return 'कृपया "बैलेंस", "ट्रांसफर" या "बिल" कहें।';
+  }
 
-        default: // en-IN
-          if (l.includes('balance')) return 'Your Axis savings balance is ₹92,450.32.';
-          if (l.includes('transfer') && l.includes('mom')) return 'Transfer ₹5,000 to Mom? Say “confirm”.';
-          if (l.includes('electricity') || l.includes('bill')) return 'Electricity bill ₹1,150 due 21 July. Pay now?';
-          return 'Try: balance, transfer, bill or card commands.';
-      }
-    }
-  </script>
+  function mockReplyMr(t) {
+    const l = t.toLowerCase();
+    if (l.includes('बॅलन्स') || l.includes('खाते')) return 'तुमच्या खात्यात ₹९२,४५०.३२ आहेत।';
+    if (l.includes('आई') && l.includes('पैसे')) return '₹५,००० आईला पाठवायचे? कन्फर्म करा।';
+    return 'कृपया "बॅलन्स", "ट्रान्सफर" किंवा "बिल" सांगा.';
+  }
+
+  function mockReplyTe(t) {
+    const l = t.toLowerCase();
+    if (l.includes('బ్యాలెన్స్') || l.includes('ఖాతా')) return 'మీ ఖాతాలో ₹౯౨,౪౫౦.౩౨ ఉన్నాయి.';
+    if (l.includes('అమ్మ') && l.includes('డబ్బు')) return '₹౫,౦౦౦ అమ్మకు పంపాలి? కన్ఫర్మ్ చేయండి.';
+    return 'దయచేసి "బ్యాలెన్స్", "ట్రాన్స్ఫర్" లేదా "బిల్" చెప్పండి.';
+  }
+</script>
 </body>
 </html>
