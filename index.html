@@ -1,32 +1,23 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>AxisAI Multilingual Voice Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8"/>
+  <title>AxisAI Voice Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <style>
-    body { font-family: system-ui, sans-serif; background:#f0f7ff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0 }
+    body { font-family:system-ui,sans-serif; background:#f0f7ff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0 }
     #micBtn { width:90px; height:90px; border-radius:50%; border:none; background:#ff6b00; color:#fff; font-size:36px; cursor:pointer; transition:transform .2s }
     #micBtn:active { transform:scale(.9) }
-    #bubble { margin-top:25px; padding:12px 20px; max-width:280px; border-radius:18px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); font-size:16px; text-align:center }
-    #langSel { margin-top:15px }
-    #langSel select { padding:4px 8px; font-size:14px }
+    #bubble { margin-top:25px; padding:12px 20px; max-width:300px; border-radius:18px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); font-size:16px; text-align:center }
+    #log { margin-top:15px; font-size:12px; color:#666; max-width:300px; word-break:break-word }
   </style>
 </head>
 <body>
   <button id="micBtn" title="Hold & Speak">🎤</button>
-  <div id="bubble">Choose a language below, then tap & speak!</div>
+  <div id="bubble">Tap & hold the mic, then say:<br><em>“What’s my balance?”</em></div>
+  <div id="log">Awaiting HTTPS…</div>
 
-  <div id="langSel">
-    <select id="langPicker">
-      <option value="en-IN">English</option>
-      <option value="hi-IN">हिंदी</option>
-      <option value="mr-IN">मराठी</option>
-      <option value="te-IN">తెలుగు</option>
-    </select>
-  </div>
-
- <script>
+  <script>
   const btn     = document.getElementById('micBtn');
   const bubble  = document.getElementById('bubble');
   const picker  = document.getElementById('langPicker');
